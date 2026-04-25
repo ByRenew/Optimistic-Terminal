@@ -5,23 +5,29 @@ const os = require('os');
 const path = require('path');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = 3001;
 
 app.use(express.static(__dirname));
 
-app.get('/terminal', (req, res) => {
-  res.sendFile(path.join(__dirname, 'terminal.html'));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\x1b[36m════════════════════════════════════════════\x1b[0m`);
+  console.log(`\x1b[32mOptimistic Terminal Server\x1b[0m`);
+  console.log(`\x1b[36m════════════════════════════════════════════\x1b[0m`);
+  console.log(`\x1b[32m✓\x1b[0m http://localhost:${PORT}`);
+  console.log(`\x1b[32m✓\x1b[0m Ready\n`);
 });
 
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
   let currentDir = os.homedir();
-  let shell = spawn(process.platform === 'win32' ? 'cmd.exe' : '/bin/bash', [], {
+  console.log(`\x1b[32m✓\x1b[0m Client connected`);
+  
+  const shell = spawn('/bin/bash', [], {
     cwd: currentDir,
     env: { ...process.env, TERM: 'xterm-256color' },
     shell: true
@@ -51,5 +57,8 @@ wss.on('connection', (ws) => {
     }
   });
   
-  ws.on('close', () => shell.kill());
+  ws.on('close', () => {
+    shell.kill();
+    console.log(`\x1b[31m✗\x1b[0m Client disconnected`);
+  });
 });
