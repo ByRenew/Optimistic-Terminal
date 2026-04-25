@@ -13,149 +13,128 @@
 
 body {
   background: transparent;
-  font-family: 'Courier New', 'Fira Code', monospace;
+  font-family: 'Courier New', monospace;
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.terminal-glass {
+.terminal {
   background: rgba(10, 14, 10, 0.85);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   height: 100vh;
   display: flex;
   flex-direction: column;
   border: 1px solid rgba(135, 184, 127, 0.2);
-  margin: 0;
   overflow: hidden;
 }
 
-.terminal-header {
+.header {
   background: rgba(26, 30, 26, 0.7);
-  backdrop-filter: blur(10px);
   padding: 12px 20px;
   border-bottom: 1px solid rgba(135, 184, 127, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
 }
 
-.terminal-title {
+.title {
   color: #87b87f;
   font-weight: bold;
   font-size: 13px;
-  letter-spacing: 1px;
-  font-family: monospace;
 }
 
-.terminal-status {
+.status {
   font-size: 11px;
   padding: 4px 10px;
   border-radius: 4px;
-  font-family: monospace;
 }
 
 .status-connected {
   color: #87b87f;
   background: rgba(135, 184, 127, 0.15);
 }
-
 .status-disconnected {
   color: #ff5f57;
   background: rgba(255, 95, 87, 0.15);
 }
-
 .status-connecting {
   color: #febc2e;
   background: rgba(254, 188, 46, 0.15);
 }
 
-.terminal-output {
+.output {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  background: transparent;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
+}
+
+.line {
+  font-family: monospace;
+  font-size: 12px;
   line-height: 1.5;
-}
-
-.terminal-line {
-  margin-bottom: 2px;
   white-space: pre-wrap;
-  word-break: break-all;
   color: #e0e0e0;
+  margin-bottom: 2px;
 }
 
-.terminal-input-area {
+.input-area {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
   background: rgba(13, 18, 8, 0.8);
-  backdrop-filter: blur(10px);
   border-top: 1px solid rgba(135, 184, 127, 0.2);
-  flex-shrink: 0;
 }
 
-.terminal-prompt {
+.prompt {
   color: #87b87f;
   font-family: monospace;
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
-.terminal-input {
+.input {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
   color: #b8d8b0;
   font-family: monospace;
-  font-size: 13px;
+  font-size: 12px;
 }
 
-.terminal-input:disabled {
+.input:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
 }
 
-.terminal-output::-webkit-scrollbar {
+.output::-webkit-scrollbar {
   width: 6px;
 }
-
-.terminal-output::-webkit-scrollbar-track {
+.output::-webkit-scrollbar-track {
   background: rgba(26, 30, 26, 0.5);
 }
-
-.terminal-output::-webkit-scrollbar-thumb {
+.output::-webkit-scrollbar-thumb {
   background: rgba(135, 184, 127, 0.3);
   border-radius: 3px;
-}
-
-.terminal-output::-webkit-scrollbar-thumb:hover {
-  background: rgba(135, 184, 127, 0.5);
 }
 </style>
 </head>
 <body>
-<div class="terminal-glass">
-<div class="terminal-header">
-<div class="terminal-title">⟫ OPTIMISTIC TERMINAL ⟪</div>
-<div class="terminal-status status-connecting" id="status">connecting</div>
+<div class="terminal">
+<div class="header">
+<div class="title">OPTIMISTIC TERMINAL</div>
+<div class="status status-connecting" id="status">starting</div>
 </div>
-<div class="terminal-output" id="output">
-<div class="terminal-line" style="color:#87b87f">─────────────────────────────────────────</div>
-<div class="terminal-line" style="color:#87b87f">    Optimistic OS Terminal</div>
-<div class="terminal-line" style="color:#87b87f">─────────────────────────────────────────</div>
-<div class="terminal-line" style="color:#febc2e">Connecting to backend...</div>
+<div class="output" id="output">
+<div class="line" style="color:#87b87f">─────────────────────────────────────</div>
+<div class="line" style="color:#87b87f">    Optimistic Terminal</div>
+<div class="line" style="color:#87b87f">─────────────────────────────────────</div>
 </div>
-<div class="terminal-input-area">
-<span class="terminal-prompt" id="prompt">user@optimistic:~$</span>
-<input type="text" class="terminal-input" id="input" autofocus>
+<div class="input-area">
+<span class="prompt" id="prompt">user@optimistic:~$</span>
+<input type="text" class="input" id="input" autofocus>
 </div>
 </div>
 
@@ -166,53 +145,41 @@ let currentDir = '~';
 let history = [];
 let historyIndex = -1;
 let username = 'user';
-let hostname = 'optimistic';
 let retries = 0;
 
-const outputEl = document.getElementById('output');
-const inputEl = document.getElementById('input');
-const promptEl = document.getElementById('prompt');
+const output = document.getElementById('output');
+const input = document.getElementById('input');
+const prompt = document.getElementById('prompt');
 const statusEl = document.getElementById('status');
-
-function stripAnsi(text) {
-  let result = text;
-  result = result.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-  result = result.replace(/\x1b\([A-Z]/g, '');
-  result = result.replace(/\x1b=[0-9]/g, '');
-  result = result.replace(/\x1b\]0;[^\x07]*\x07/g, '');
-  result = result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-  return result;
-}
 
 function setStatus(status, text) {
   statusEl.textContent = text;
-  statusEl.className = `terminal-status status-${status}`;
+  statusEl.className = `status status-${status}`;
   connected = status === 'connected';
-  inputEl.disabled = !connected;
-  if (connected) inputEl.focus();
+  input.disabled = !connected;
+  if (connected) input.focus();
 }
 
 function updatePrompt() {
   const dir = currentDir === '~' ? '~' : currentDir.split('/').pop();
-  promptEl.textContent = `${username}@${hostname}:${dir}$ `;
+  prompt.textContent = `${username}@optimistic:${dir}$ `;
 }
 
-function appendOutput(text, isCommand = false) {
+function appendOutput(text, isCmd = false) {
   const div = document.createElement('div');
-  div.className = 'terminal-line';
-  const cleanText = stripAnsi(text);
-  if (isCommand) {
-    div.innerHTML = `<span style="color:#87b87f">${promptEl.textContent}</span><span style="color:#b8d8b0">${escapeHtml(cleanText)}</span>`;
+  div.className = 'line';
+  if (isCmd) {
+    div.innerHTML = `<span style="color:#87b87f">${prompt.textContent}</span><span style="color:#b8d8b0">${escapeHtml(text)}</span>`;
   } else {
-    div.textContent = cleanText;
+    div.textContent = text;
   }
-  outputEl.appendChild(div);
+  output.appendChild(div);
   div.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
-function escapeHtml(text) {
+function escapeHtml(t) {
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = t;
   return div.innerHTML;
 }
 
@@ -221,36 +188,26 @@ function sendCommand(cmd) {
   
   history.unshift(cmd);
   historyIndex = -1;
-  
   appendOutput(cmd, true);
   
-  if (cmd === 'clear' || cmd === 'cls') {
-    outputEl.innerHTML = '';
+  if (cmd === 'clear') {
+    output.innerHTML = '';
     const welcome = document.createElement('div');
-    welcome.className = 'terminal-line';
+    welcome.className = 'line';
     welcome.style.color = '#87b87f';
-    welcome.textContent = '─────────────────────────────────────────\n    Optimistic OS Terminal\n─────────────────────────────────────────';
-    outputEl.appendChild(welcome);
-    return;
-  }
-  
-  if (cmd === 'exit') {
-    appendOutput('Closing terminal...');
-    setTimeout(() => {
-      if (ws) ws.close();
-      window.close();
-    }, 500);
+    welcome.textContent = '─────────────────────────────────────\n    Optimistic Terminal\n─────────────────────────────────────';
+    output.appendChild(welcome);
     return;
   }
   
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(cmd);
   } else {
-    appendOutput('Not connected to terminal server');
+    appendOutput('Not connected');
   }
 }
 
-function connectWebSocket() {
+function connect() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}`;
   
@@ -265,79 +222,64 @@ function connectWebSocket() {
     ws.send('__cwd__');
   };
   
-  ws.onmessage = (event) => {
+  ws.onmessage = (e) => {
     try {
-      const data = JSON.parse(event.data);
+      const data = JSON.parse(e.data);
       if (data.type === 'output') {
         appendOutput(data.data);
       } else if (data.type === 'cwd') {
         const home = `/home/${username}`;
-        if (data.data === home) {
-          currentDir = '~';
-        } else if (data.data.startsWith(home)) {
-          currentDir = '~' + data.data.substring(home.length);
-        } else {
-          currentDir = data.data;
-        }
+        if (data.data === home) currentDir = '~';
+        else if (data.data.startsWith(home)) currentDir = '~' + data.data.substring(home.length);
+        else currentDir = data.data;
         updatePrompt();
       }
-    } catch (e) {
-      if (event.data) appendOutput(event.data);
+    } catch(e) {
+      appendOutput(e.data || '');
     }
   };
   
   ws.onerror = () => {
     setStatus('disconnected', 'error');
-    appendOutput('WebSocket error - check if server is running');
   };
   
   ws.onclose = () => {
     setStatus('disconnected', 'disconnected');
-    appendOutput('Connection lost');
-    
     if (retries < 5) {
       retries++;
-      appendOutput(`Reconnecting in ${retries}s...`);
-      setTimeout(connectWebSocket, retries * 1000);
-    } else {
-      appendOutput('Failed to reconnect. Please refresh the page.');
+      setTimeout(connect, retries * 1000);
     }
   };
 }
 
-inputEl.addEventListener('keydown', (e) => {
+input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
-    const cmd = inputEl.value;
-    inputEl.value = '';
+    const cmd = input.value;
+    input.value = '';
     sendCommand(cmd);
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
     if (historyIndex < history.length - 1) {
       historyIndex++;
-      inputEl.value = history[historyIndex];
+      input.value = history[historyIndex];
     }
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
     if (historyIndex > 0) {
       historyIndex--;
-      inputEl.value = history[historyIndex];
+      input.value = history[historyIndex];
     } else if (historyIndex === 0) {
       historyIndex = -1;
-      inputEl.value = '';
+      input.value = '';
     }
   }
 });
 
 document.body.addEventListener('click', () => {
-  if (!inputEl.disabled) inputEl.focus();
+  if (!input.disabled) input.focus();
 });
 
-try {
-  const session = JSON.parse(localStorage.getItem('optimistic.session') || 'null');
-  if (session && session.name) username = session.name;
-} catch(e) {}
-
-connectWebSocket();
+connect();
 </script>
 </body>
 </html>
