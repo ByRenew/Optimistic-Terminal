@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,26 +13,28 @@
 
 body {
   background: transparent;
-  font-family: 'Courier New', 'SF Mono', monospace;
+  font-family: 'Courier New', 'Fira Code', monospace;
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.terminal {
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+.terminal-glass {
+  background: rgba(10, 14, 10, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   height: 100vh;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid rgba(135, 184, 127, 0.3);
-  border-right: 1px solid rgba(135, 184, 127, 0.3);
+  border: 1px solid rgba(135, 184, 127, 0.2);
+  margin: 0;
+  overflow: hidden;
 }
 
-.header {
-  background: rgba(20, 20, 20, 0.8);
+.terminal-header {
+  background: rgba(26, 30, 26, 0.7);
+  backdrop-filter: blur(10px);
   padding: 12px 20px;
   border-bottom: 1px solid rgba(135, 184, 127, 0.2);
   display: flex;
@@ -41,259 +43,301 @@ body {
   flex-shrink: 0;
 }
 
-.title {
+.terminal-title {
   color: #87b87f;
-  font-weight: 500;
+  font-weight: bold;
   font-size: 13px;
   letter-spacing: 1px;
+  font-family: monospace;
 }
 
-.status {
+.terminal-status {
   font-size: 11px;
   padding: 4px 10px;
+  border-radius: 4px;
   font-family: monospace;
 }
 
 .status-connected {
   color: #87b87f;
+  background: rgba(135, 184, 127, 0.15);
 }
 
 .status-disconnected {
   color: #ff5f57;
+  background: rgba(255, 95, 87, 0.15);
 }
 
 .status-connecting {
   color: #febc2e;
+  background: rgba(254, 188, 46, 0.15);
 }
 
-.output {
+.terminal-output {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
   background: transparent;
-}
-
-.line {
   font-family: 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.terminal-line {
+  margin-bottom: 2px;
   white-space: pre-wrap;
   word-break: break-all;
   color: #e0e0e0;
 }
 
-.input-area {
+.terminal-input-area {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(20, 20, 20, 0.8);
+  background: rgba(13, 18, 8, 0.8);
+  backdrop-filter: blur(10px);
   border-top: 1px solid rgba(135, 184, 127, 0.2);
   flex-shrink: 0;
 }
 
-.prompt {
+.terminal-prompt {
   color: #87b87f;
   font-family: monospace;
   font-size: 13px;
   white-space: nowrap;
 }
 
-.input {
+.terminal-input {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
-  color: #e0e0e0;
+  color: #b8d8b0;
   font-family: monospace;
   font-size: 13px;
 }
 
-.input:disabled {
+.terminal-input:disabled {
   opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.output::-webkit-scrollbar {
+.terminal-output::-webkit-scrollbar {
   width: 6px;
 }
 
-.output::-webkit-scrollbar-track {
-  background: rgba(50, 50, 50, 0.3);
+.terminal-output::-webkit-scrollbar-track {
+  background: rgba(26, 30, 26, 0.5);
 }
 
-.output::-webkit-scrollbar-thumb {
-  background: rgba(135, 184, 127, 0.4);
+.terminal-output::-webkit-scrollbar-thumb {
+  background: rgba(135, 184, 127, 0.3);
+  border-radius: 3px;
 }
 
-.output::-webkit-scrollbar-thumb:hover {
-  background: rgba(135, 184, 127, 0.6);
+.terminal-output::-webkit-scrollbar-thumb:hover {
+  background: rgba(135, 184, 127, 0.5);
 }
 </style>
 </head>
 <body>
-<div class="terminal">
-<div class="header">
-<div class="title">OPTIMISTIC TERMINAL</div>
-<div class="status status-connecting" id="status">starting</div>
+<div class="terminal-glass">
+<div class="terminal-header">
+<div class="terminal-title">⟫ OPTIMISTIC TERMINAL ⟪</div>
+<div class="terminal-status status-connecting" id="status">connecting</div>
 </div>
-<div class="output" id="output">
-<div class="line" style="color:#87b87f">─────────────────────────────────────────</div>
-<div class="line" style="color:#87b87f">    Optimistic OS Terminal</div>
-<div class="line" style="color:#87b87f">─────────────────────────────────────────</div>
+<div class="terminal-output" id="output">
+<div class="terminal-line" style="color:#87b87f">─────────────────────────────────────────</div>
+<div class="terminal-line" style="color:#87b87f">    Optimistic OS Terminal</div>
+<div class="terminal-line" style="color:#87b87f">─────────────────────────────────────────</div>
+<div class="terminal-line" style="color:#febc2e">Connecting to backend...</div>
 </div>
-<div class="input-area">
-<span class="prompt" id="prompt">user@optimistic:~$</span>
-<input type="text" class="input" id="input" autofocus>
+<div class="terminal-input-area">
+<span class="terminal-prompt" id="prompt">user@optimistic:~$</span>
+<input type="text" class="terminal-input" id="input" autofocus>
 </div>
 </div>
 
 <script>
-let ws=null,connected=false,currentDir='~',history=[],historyIndex=-1,username='user',hostname='optimistic',retries=0;
-const outputEl=document.getElementById('output');
-const inputEl=document.getElementById('input');
-const promptEl=document.getElementById('prompt');
-const statusEl=document.getElementById('status');
+let ws = null;
+let connected = false;
+let currentDir = '~';
+let history = [];
+let historyIndex = -1;
+let username = 'user';
+let hostname = 'optimistic';
+let retries = 0;
 
-function stripAnsi(t){
-  let r=t;
-  r=r.replace(/\x1b\[[0-9;]*[a-zA-Z]/g,'');
-  r=r.replace(/\x1b\([A-Z]/g,'');
-  r=r.replace(/\x1b=[0-9]/g,'');
-  r=r.replace(/\x1b\]0;[^\x07]*\x07/g,'');
-  r=r.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
-  return r;
+const outputEl = document.getElementById('output');
+const inputEl = document.getElementById('input');
+const promptEl = document.getElementById('prompt');
+const statusEl = document.getElementById('status');
+
+function stripAnsi(text) {
+  let result = text;
+  result = result.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  result = result.replace(/\x1b\([A-Z]/g, '');
+  result = result.replace(/\x1b=[0-9]/g, '');
+  result = result.replace(/\x1b\]0;[^\x07]*\x07/g, '');
+  result = result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  return result;
 }
 
-function setStatus(s,t){
-  statusEl.textContent=t;
-  statusEl.className=`status status-${s}`;
-  connected=s==='connected';
-  inputEl.disabled=!connected;
-  if(connected)inputEl.focus();
+function setStatus(status, text) {
+  statusEl.textContent = text;
+  statusEl.className = `terminal-status status-${status}`;
+  connected = status === 'connected';
+  inputEl.disabled = !connected;
+  if (connected) inputEl.focus();
 }
 
-function updatePrompt(){
-  const d=currentDir==='~'?'~':currentDir.split('/').pop();
-  promptEl.textContent=`${username}@${hostname}:${d}$ `;
+function updatePrompt() {
+  const dir = currentDir === '~' ? '~' : currentDir.split('/').pop();
+  promptEl.textContent = `${username}@${hostname}:${dir}$ `;
 }
 
-function appendOutput(t,i){
-  const div=document.createElement('div');
-  div.className='line';
-  const clean=stripAnsi(t);
-  if(i){
-    div.innerHTML=`<span style="color:#87b87f">${promptEl.textContent}</span><span style="color:#e0e0e0">${escapeHtml(clean)}</span>`;
-  }else{
-    div.textContent=clean;
+function appendOutput(text, isCommand = false) {
+  const div = document.createElement('div');
+  div.className = 'terminal-line';
+  const cleanText = stripAnsi(text);
+  if (isCommand) {
+    div.innerHTML = `<span style="color:#87b87f">${promptEl.textContent}</span><span style="color:#b8d8b0">${escapeHtml(cleanText)}</span>`;
+  } else {
+    div.textContent = cleanText;
   }
   outputEl.appendChild(div);
-  div.scrollIntoView({behavior:'smooth',block:'end'});
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
-function escapeHtml(t){
-  const div=document.createElement('div');
-  div.textContent=t;
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
   return div.innerHTML;
 }
 
-function sendCommand(c){
-  if(!c.trim())return;
-  history.unshift(c);
-  historyIndex=-1;
-  appendOutput(c,true);
-  if(c==='clear'){
-    outputEl.innerHTML='';
-    const welcome=document.createElement('div');
-    welcome.className='line';
-    welcome.style.color='#87b87f';
-    welcome.textContent='─────────────────────────────────────────\n    Optimistic OS Terminal\n─────────────────────────────────────────';
+function sendCommand(cmd) {
+  if (!cmd.trim()) return;
+  
+  history.unshift(cmd);
+  historyIndex = -1;
+  
+  appendOutput(cmd, true);
+  
+  if (cmd === 'clear' || cmd === 'cls') {
+    outputEl.innerHTML = '';
+    const welcome = document.createElement('div');
+    welcome.className = 'terminal-line';
+    welcome.style.color = '#87b87f';
+    welcome.textContent = '─────────────────────────────────────────\n    Optimistic OS Terminal\n─────────────────────────────────────────';
     outputEl.appendChild(welcome);
     return;
   }
-  if(c==='exit'){
-    appendOutput('closing terminal...');
-    setTimeout(()=>{if(ws)ws.close();window.close();},500);
+  
+  if (cmd === 'exit') {
+    appendOutput('Closing terminal...');
+    setTimeout(() => {
+      if (ws) ws.close();
+      window.close();
+    }, 500);
     return;
   }
-  if(ws&&ws.readyState===WebSocket.OPEN){
-    ws.send(c);
-  }else{
-    appendOutput('not connected to server');
+  
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(cmd);
+  } else {
+    appendOutput('Not connected to terminal server');
   }
 }
 
-function connect(){
-  const p=window.location.protocol==='https:'?'wss:':'ws:';
-  const url=`${p}//${window.location.host}`;
-  setStatus('connecting','connecting');
-  ws=new WebSocket(url);
-  ws.onopen=()=>{
-    setStatus('connected','connected');
-    retries=0;
-    appendOutput('terminal ready');
+function connectWebSocket() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}`;
+  
+  setStatus('connecting', 'connecting');
+  
+  ws = new WebSocket(wsUrl);
+  
+  ws.onopen = () => {
+    setStatus('connected', 'connected');
+    retries = 0;
+    appendOutput('Terminal ready');
     ws.send('__cwd__');
   };
-  ws.onmessage=(e)=>{
-    try{
-      const d=JSON.parse(e.data);
-      if(d.type==='output'){
-        appendOutput(d.data);
-      }else if(d.type==='cwd'){
-        const h=`/home/${username}`;
-        if(d.data===h)currentDir='~';
-        else if(d.data.startsWith(h))currentDir='~'+d.data.substring(h.length);
-        else currentDir=d.data;
+  
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'output') {
+        appendOutput(data.data);
+      } else if (data.type === 'cwd') {
+        const home = `/home/${username}`;
+        if (data.data === home) {
+          currentDir = '~';
+        } else if (data.data.startsWith(home)) {
+          currentDir = '~' + data.data.substring(home.length);
+        } else {
+          currentDir = data.data;
+        }
         updatePrompt();
       }
-    }catch(e){
-      if(e.data)appendOutput(e.data);
+    } catch (e) {
+      if (event.data) appendOutput(event.data);
     }
   };
-  ws.onerror=()=>setStatus('disconnected','error');
-  ws.onclose=()=>{
-    setStatus('disconnected','disconnected');
-    appendOutput('connection lost');
-    if(retries<5){
+  
+  ws.onerror = () => {
+    setStatus('disconnected', 'error');
+    appendOutput('WebSocket error - check if server is running');
+  };
+  
+  ws.onclose = () => {
+    setStatus('disconnected', 'disconnected');
+    appendOutput('Connection lost');
+    
+    if (retries < 5) {
       retries++;
-      appendOutput(`reconnecting in ${retries}s`);
-      setTimeout(connect,retries*1000);
+      appendOutput(`Reconnecting in ${retries}s...`);
+      setTimeout(connectWebSocket, retries * 1000);
+    } else {
+      appendOutput('Failed to reconnect. Please refresh the page.');
     }
   };
 }
 
-inputEl.addEventListener('keydown',(e)=>{
-  if(e.key==='Enter'){
-    const c=inputEl.value;
-    inputEl.value='';
-    sendCommand(c);
-  }else if(e.key==='ArrowUp'){
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const cmd = inputEl.value;
+    inputEl.value = '';
+    sendCommand(cmd);
+  } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    if(historyIndex<history.length-1){
+    if (historyIndex < history.length - 1) {
       historyIndex++;
-      inputEl.value=history[historyIndex];
+      inputEl.value = history[historyIndex];
     }
-  }else if(e.key==='ArrowDown'){
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    if(historyIndex>0){
+    if (historyIndex > 0) {
       historyIndex--;
-      inputEl.value=history[historyIndex];
-    }else if(historyIndex===0){
-      historyIndex=-1;
-      inputEl.value='';
+      inputEl.value = history[historyIndex];
+    } else if (historyIndex === 0) {
+      historyIndex = -1;
+      inputEl.value = '';
     }
   }
 });
 
-document.body.addEventListener('click',()=>{
-  if(!inputEl.disabled)inputEl.focus();
+document.body.addEventListener('click', () => {
+  if (!inputEl.disabled) inputEl.focus();
 });
 
-try{
-  const s=JSON.parse(localStorage.getItem('optimistic.session')||'null');
-  if(s&&s.name)username=s.name;
-}catch(e){}
+try {
+  const session = JSON.parse(localStorage.getItem('optimistic.session') || 'null');
+  if (session && session.name) username = session.name;
+} catch(e) {}
 
-connect();
+connectWebSocket();
 </script>
 </body>
 </html>
