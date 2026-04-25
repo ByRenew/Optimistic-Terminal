@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
 
@@ -14,23 +14,23 @@ app.get('/', (req, res) => {
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\x1b[36m════════════════════════════════════════════\x1b[0m`);
-  console.log(`\x1b[32mOptimistic Terminal Server\x1b[0m`);
-  console.log(`\x1b[36m════════════════════════════════════════════\x1b[0m`);
-  console.log(`\x1b[32m✓\x1b[0m http://localhost:${PORT}`);
-  console.log(`\x1b[32m✓\x1b[0m Ready\n`);
+  console.log(`Railway Terminal Server running on port ${PORT}`);
 });
 
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
   let currentDir = os.homedir();
-  console.log(`\x1b[32m✓\x1b[0m Client connected`);
+  console.log(`Client connected`);
   
-  const shell = spawn('/bin/bash', [], {
+  const shell = spawn('/bin/bash', ['-l'], {
     cwd: currentDir,
-    env: { ...process.env, TERM: 'xterm-256color' },
-    shell: true
+    env: {
+      ...process.env,
+      TERM: 'xterm-256color',
+      PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+    },
+    shell: false
   });
   
   shell.stdout.on('data', (data) => {
@@ -59,6 +59,6 @@ wss.on('connection', (ws) => {
   
   ws.on('close', () => {
     shell.kill();
-    console.log(`\x1b[31m✗\x1b[0m Client disconnected`);
+    console.log(`Client disconnected`);
   });
 });
